@@ -1,24 +1,16 @@
 use arboard::Clipboard;
 
-fn main() {
-    let mut clipboard = Clipboard::new().expect("Failed to access clipboard");
-
-    let contents = clipboard.get_text().expect("Failed to read clipboard content");
-
-    let lines: Vec<String> = contents
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut cb = Clipboard::new()?;
+    let lines: Vec<_> = cb.get_text()?
         .lines()
-        .filter(|line| !line.trim().is_empty())
-        .map(|line| {
-            let escaped = line.trim().replace('\'', "''");
-            format!("'{}'", escaped)
+        .filter_map(|l| {
+            let l = l.trim();
+            (!l.is_empty()).then(|| format!("'{}'", l.replace('\'', "''")))
         })
         .collect();
 
-    let count = lines.len();
-
-    let result = lines.join(",\n");
-
-    clipboard.set_text(result).expect("Failed to write to clipboard");
-
-    println!("✅ {} item(s) transformed and copied to clipboard.", count);
+    cb.set_text(&lines.join(",\n"))?;
+    println!("✅ {} item(s) transformed and copied to clipboard.", lines.len());
+    Ok(())
 }
